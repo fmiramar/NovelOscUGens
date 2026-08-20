@@ -181,7 +181,7 @@ double readBank(
 }
 
 void maybeRegenerate(
-    SpectralBasisOsc* unit, int inNumSamples)
+    SpectralBasisOsc* unit)
 {
     if (unit->transitioning)
         return;
@@ -241,7 +241,7 @@ void SpectralBasisOsc_next(
         ClearUnitOutputs(unit, inNumSamples);
         return;
     }
-    maybeRegenerate(unit, inNumSamples);
+    maybeRegenerate(unit);
     const double sampleRate = unit->mRate->mSampleRate;
     float* output = OUT(0);
 
