@@ -6,14 +6,6 @@ UGens and two language-side oscillator constructors for phase shaping,
 wavetable morphing, additive spectra, feedback networks, and nonlinear
 modulation.
 
-This is an original clean-room collection, not a port of one named instrument
-or plug-in. Its DSP combines published mathematics and established synthesis
-techniques—geometric series, wavetable interpolation, BLEP/BLAMP correction,
-orthogonal transforms, additive synthesis, signed phase accumulation, and
-modulation matrices—into SuperCollider-native designs. No proprietary
-firmware, extracted binary data, factory wavetable, preset, panel artwork, or
-copied product documentation is included.
-
 ## UGens
 
 - `HarmonicStrideOsc` creates a geometrically weighted harmonic or fractional-stride series and returns quadrature outputs. A stable finite complex sum replaces a bank of independently running oscillators.
@@ -154,6 +146,14 @@ in real compositions before a `1.0` claim.
   exercised on the exact SuperCollider versions shipped with its artifacts.
 
 ## Source and attribution
+
+This is an original clean-room collection, not a port of one named instrument
+or plug-in. Its DSP combines published mathematics and established synthesis
+techniques—geometric series, wavetable interpolation, BLEP/BLAMP correction,
+orthogonal transforms, additive synthesis, signed phase accumulation, and
+modulation matrices—into SuperCollider-native designs. No proprietary
+firmware, extracted binary data, factory wavetable, preset, panel artwork, or
+copied product documentation is included.
 
 `ORIGINS.md` classifies each clean-room design. The public SuperCollider plugin
 API and repository conventions are the only external build-time source
