@@ -1,0 +1,8 @@
+build/
+build-*/
+stage/
+dist/
+.DS_Store
+*.wav
+*.aiff
+*.aif

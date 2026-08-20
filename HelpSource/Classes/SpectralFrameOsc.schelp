@@ -1,0 +1,142 @@
+class:: SpectralFrameOsc
+summary:: Phase-continuous synthesis from interpolated spectral frames
+categories:: UGens>Generators>Additive
+related:: Guides/NovelOscillators
+
+description::
+
+SpectralFrameOsc maintains an independent signed phase for every stored partial
+while interpolating ratios and amplitudes between spectral frames. Ratio
+stretch, dB-per-octave tilt, neighbor blur, Nyquist fades, and smoothly changing
+partial activation are applied before energy normalization. This is an
+original generic resynthesis engine; it does not analyze sound files.
+
+The closest vanilla UGen is link::Classes/Klang::. Both sum sinusoidal
+components, but SpectralFrameOsc preserves per-partial phase while continuously
+moving through Buffer-stored spectra.
+
+classmethods::
+
+method:: ar
+
+argument:: bufnum
+Mono Buffer prepared by link::Classes/SpectralFrameBuffer::.
+
+argument:: freq
+Signed reference frequency in hertz.
+
+argument:: frame
+Continuous frame index, wrapped across the stored frame count.
+
+argument:: stretch
+Exponent applied to ratios as code::ratio.pow(stretch)::, clamped to
+code::-4..4::.
+
+argument:: tilt
+Amplitude slope in decibels per octave of ratio, clamped to code::-48..48::.
+
+argument:: blur
+Neighbor-amplitude smoothing amount, clamped to code::0..1::.
+
+argument:: activePartials
+Continuous active-partial count. Entries and exits use a short gain ramp.
+
+argument:: phaseMode
+Initialization-rate phase layout: code::0:: aligned, code::1:: evenly spread,
+or code::2:: seeded random.
+
+argument:: frames
+Initialization-rate number of frames in the Buffer, from code::1:: through
+code::65536::.
+
+argument:: partials
+Initialization-rate partial count from code::1:: through code::1024::.
+
+argument:: seed
+Initialization-rate nonnegative seed for phase mode code::2::.
+
+argument:: mul
+Output multiplier.
+
+argument:: add
+Offset added after multiplication.
+
+returns::
+One normalized audio signal.
+
+method:: kr
+
+SpectralFrameOsc is audio-rate only. This method throws an error.
+
+subsection:: Discussion
+
+Phase identity is attached to partial index. If ratios cross while frames
+interpolate, phases do not exchange identities. A malformed, freed, or
+reallocated Buffer permanently silences the active instance without logging
+from the real-time callback.
+
+The calculation path is selected when the Synth is constructed. Audio-rate
+code::frame::, code::stretch::, code::tilt::, code::blur::, or
+code::activePartials:: selects an exact per-sample evaluator. Scalar and
+control-rate versions of all five controls select a lower-cost block-cooked
+path with ramped weights and recursive complex oscillators. The optimized path
+still advances inactive phase identities analytically, so bringing a partial
+back does not reset its phase. The instance owns about code::64 * partials::
+bytes of private state in addition to the shared Buffer.
+
+examples::
+
+code::
+(
+Routine({
+    var bank;
+    SpectralFrameBuffer.prepare(
+        s,
+        [
+            [[1, 2, 3, 4], [1, 0.5, 0.25, 0.1]],
+            [[1, 1.6, 2.8, 5], [1, 0.2, 0.7, 0.12]]
+        ],
+        action: { |object| bank = object }
+    );
+    s.sync;
+    {
+        SpectralFrameOsc.ar(
+            bank.buffer, 75,
+            frame: LFTri.kr(0.08).range(0, 1),
+            frames: bank.frames, partials: bank.partials
+        ) * 0.07
+    }.play;
+}).play;
+)
+::
+
+code::
+(
+Routine({
+    var bank;
+    SpectralFrameBuffer.prepare(
+        s,
+        [
+            [[1, 2, 4, 7], [1, 0.5, 0.2, 0.08]],
+            [[1, 3, 5, 9], [1, 0.7, 0.3, 0.1]]
+        ],
+        action: { |object| bank = object }
+    );
+    s.sync;
+    {
+        SpectralFrameOsc.ar(
+            bank.buffer, 52, frame: SinOsc.kr(0.07).range(0, 1),
+            stretch: MouseX.kr(0.5, 1.6), tilt: -2,
+            blur: 0.3, activePartials: 4,
+            frames: bank.frames, partials: bank.partials
+        ) * 0.06
+    }.play;
+}).play;
+)
+::
+
+subsection:: See also
+
+link::Guides/NovelOscillators::
+link::Classes/SpectralFrameBuffer::
+link::Classes/Klang::

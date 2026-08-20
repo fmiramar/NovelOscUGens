@@ -1,0 +1,163 @@
+class:: TableMorph3D
+summary:: Trilinear traversal of a prepared three-dimensional wavetable bank
+categories:: UGens>Generators>Wavetable
+related:: Guides/NovelOscillators
+
+description::
+
+TableMorph3D reads a row-major three-dimensional grid of equal-size
+single-cycle tables. It trilinearly interpolates eight neighboring tables and
+crossfades frequency-selected mip levels. TableMorph2D and TableMorph3D share
+the same playback, interpolation, and mip-selection backend.
+
+The closest vanilla UGen is link::Classes/Osc::. Both read periodic tables, but
+TableMorph3D traverses a prepared waveform volume and chooses bandlimited mip
+levels automatically.
+
+classmethods::
+
+method:: ar
+
+argument:: bufnum
+Mono Buffer returned by code::prepareBuffer::.
+
+argument:: freq
+Signed oscillator frequency in hertz.
+
+argument:: x
+Normalized x coordinate, clamped to code::0..1::.
+
+argument:: y
+Normalized y coordinate, clamped to code::0..1::.
+
+argument:: z
+Normalized z coordinate, clamped to code::0..1::.
+
+argument:: phase
+Readout phase offset in radians.
+
+argument:: tablesX
+Initialization-rate x dimension from code::1:: through code::128::.
+
+argument:: tablesY
+Initialization-rate y dimension from code::1:: through code::128::.
+
+argument:: tablesZ
+Initialization-rate z dimension from code::1:: through code::128::.
+
+argument:: tableSize
+Initialization-rate power-of-two table length from code::64:: through
+code::65536::.
+
+argument:: mipLevels
+Initialization-rate prepared mip count from code::1:: through code::16::.
+
+argument:: interpolation
+Initialization-rate table interpolation: code::0:: nearest, code::1:: linear,
+or code::2:: cubic.
+
+argument:: mul
+Output multiplier.
+
+argument:: add
+Offset added after multiplication.
+
+returns::
+One audio signal.
+
+method:: kr
+
+TableMorph3D is audio-rate only. This method throws an error.
+
+method:: prepareBuffer
+
+argument:: server
+Destination Server. Nil selects code::Server.default::.
+
+argument:: tables
+Flat row-major collection of finite samples in code::[z][y][x]:: order, with
+x changing fastest.
+
+argument:: tablesX
+Literal x dimension from code::1:: through code::128::.
+
+argument:: tablesY
+Literal y dimension from code::1:: through code::128::.
+
+argument:: tablesZ
+Literal z dimension from code::1:: through code::128::.
+
+argument:: mipLevels
+Number of low-pass levels from code::1:: through code::16::.
+
+argument:: normalize
+Remove DC from every table and, when true, peak-normalize nonzero tables.
+
+argument:: action
+Function passed to the asynchronous Buffer loader.
+
+returns::
+The allocated Buffer with layout code::[mip][z][y][x][sample]::.
+
+subsection:: Discussion
+
+The declared dimensions must exactly match Buffer sample count. Freeing or
+reallocating the Buffer permanently silences an active instance. Preparation
+is asynchronous, so synchronize the server before playback.
+
+examples::
+
+code::
+(
+Routine({
+    var size = 128;
+    var tables = 8.collect { |index|
+        Signal.sineFill(size, [1, index / 16, index / 32])
+    };
+    var buffer = TableMorph3D.prepareBuffer(
+        s, tables, 2, 2, 2, 5
+    );
+    s.sync;
+    {
+        TableMorph3D.ar(
+            buffer, 92,
+            SinOsc.kr(0.07).range(0, 1),
+            SinOsc.kr(0.09).range(0, 1),
+            SinOsc.kr(0.11).range(0, 1),
+            tablesX: 2, tablesY: 2, tablesZ: 2,
+            tableSize: size, mipLevels: 5
+        ) * 0.07
+    }.play;
+}).play;
+)
+::
+
+code::
+(
+Routine({
+    var size = 64;
+    var tables = 27.collect { |index|
+        Signal.sineFill(
+            size, [1, (index % 3) / 6, index.div(3) / 30]
+        )
+    };
+    var buffer = TableMorph3D.prepareBuffer(
+        s, tables, 3, 3, 3, 4
+    );
+    s.sync;
+    {
+        TableMorph3D.ar(
+            buffer, 61, 0.2, MouseX.kr(0, 1), MouseY.kr(0, 1),
+            tablesX: 3, tablesY: 3, tablesZ: 3,
+            tableSize: size, mipLevels: 4
+        ) * 0.065
+    }.play;
+}).play;
+)
+::
+
+subsection:: See also
+
+link::Guides/NovelOscillators::
+link::Classes/TableMorph2D::
+link::Classes/Osc::

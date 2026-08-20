@@ -1,0 +1,105 @@
+class:: RippleFormantOsc
+summary:: Cycle-synchronous decaying formant ripples
+categories:: UGens>Generators>Deterministic
+related:: Guides/NovelOscillators
+
+description::
+
+RippleFormantOsc launches two independent exponentially decaying sinusoidal
+ripples at every wrap of a base oscillator. Each ripple integrates an
+exponential frequency sweep, so its formant can rise or fall coherently during
+the base cycle. Optional oversampling and Nyquist fades limit aliasing.
+
+The closest vanilla UGen is link::Classes/Formant::. Both create a pitched
+source with formant emphasis, but RippleFormantOsc exposes two explicitly
+cycle-synchronous, chirped ripple components and their reconstruction.
+
+classmethods::
+
+method:: ar
+
+argument:: freq
+Signed base-cycle frequency in hertz. Negative values reverse base and ripple
+phase while retaining coherent resets.
+
+argument:: formantA
+Initial frequency of ripple A in hertz.
+
+argument:: formantB
+Initial frequency of ripple B in hertz.
+
+argument:: decayA
+Exponential time constant for ripple A in seconds.
+
+argument:: decayB
+Exponential time constant for ripple B in seconds.
+
+argument:: sweepA
+Ripple A frequency movement in octaves across one base cycle, clamped to
+code::-8..8::.
+
+argument:: sweepB
+Ripple B frequency movement in octaves across one base cycle.
+
+argument:: balance
+Equal-power position between ripple A and B, clamped to code::0..1::.
+
+argument:: baseLevel
+Base sine gain in the mixed output.
+
+argument:: rippleLevel
+Combined ripple gain in the mixed output.
+
+argument:: phase
+Base readout phase in radians.
+
+argument:: oversample
+Initialization-rate factor code::1::, code::2::, or code::4::.
+
+argument:: mul
+Multiplier applied to all four outputs.
+
+argument:: add
+Offset added to all four outputs after multiplication.
+
+returns::
+Four sample-coherent signals: base, ripple A, ripple B, and the documented
+level-and-balance mix.
+
+method:: kr
+
+RippleFormantOsc is audio-rate only. This method throws an error.
+
+subsection:: Discussion
+
+Ripple phase is integrated from instantaneous frequency rather than
+interpolated directly. Evaluation stops after the exponential envelope falls
+below a negligible threshold and starts again on the next base wrap.
+
+examples::
+
+code::
+(
+{ RippleFormantOsc.ar(80, 700, 1300)[3] * 0.07 }.play;
+)
+::
+
+code::
+(
+{
+    var signal = RippleFormantOsc.ar(
+        48, 430, 1900, 0.025, 0.006,
+        sweepA: 1.3, sweepB: -0.8,
+        balance: LFTri.kr(0.08).range(0, 1),
+        oversample: 4
+    );
+    Splay.ar([signal[1], signal[2]]) * 0.055;
+}.play;
+)
+::
+
+subsection:: See also
+
+link::Guides/NovelOscillators::
+link::Classes/Formant::
+link::Classes/Ringz::

@@ -1,0 +1,95 @@
+class:: SyncModeOsc
+summary:: Bandlimited oscillator with six explicit synchronization laws
+categories:: UGens>Generators>Deterministic
+related:: Guides/NovelOscillators
+
+description::
+
+SyncModeOsc applies one of six synchronization laws to a signed phase
+accumulator. Sine, BLAMP triangle, BLEP saw, and BLEP pulse shapes share the
+same event engine. Abrupt synchronization jumps receive a short causal
+correction, and sync edges are always processed before a simultaneous local
+wrap.
+
+The closest vanilla UGen is link::Classes/SyncSaw::. SyncSaw implements a
+master/slave reset relationship; SyncModeOsc accepts an arbitrary trigger and
+can reset, reverse, flip, pull, arm, or hold its phase.
+
+classmethods::
+
+method:: ar
+
+argument:: freq
+Signed local frequency in hertz.
+
+argument:: sync
+Trigger or gate input. Modes code::0..4:: detect nonpositive-to-positive
+edges; mode code::5:: holds phase while the value is positive.
+
+argument:: mode
+Initialization-rate law: code::0:: hard reset, code::1:: reverse,
+code::2:: half-cycle flip, code::3:: soft pull, code::4:: reset at the next
+local wrap, or code::5:: hold.
+
+argument:: resetPhase
+Target phase in cycles, wrapped to code::0..1::.
+
+argument:: symmetry
+Triangle breakpoint or pulse width, clamped to code::0.02..0.98::.
+
+argument:: shape
+Initialization-rate waveform: code::0:: sine, code::1:: triangle,
+code::2:: saw, or code::3:: pulse.
+
+argument:: softness
+Soft-pull duration in seconds, clamped to code::0..10::.
+
+argument:: oversample
+Initialization-rate factor code::1::, code::2::, or code::4::.
+
+argument:: mul
+Output multiplier.
+
+argument:: add
+Offset added after multiplication.
+
+returns::
+One audio signal.
+
+method:: kr
+
+SyncModeOsc is audio-rate only. This method throws an error.
+
+subsection:: Discussion
+
+Soft pull divides the shortest wrapped phase difference into an exact finite
+number of samples. Armed reset fires once. Hold resumes from the unchanged
+phase. Causal jump correction preserves event timing and reduces, but cannot
+eliminate, hard-sync aliasing.
+
+examples::
+
+code::
+(
+{ SyncModeOsc.ar(110, Impulse.ar(37), 0, shape: 2) * 0.07 }.play;
+)
+::
+
+code::
+(
+{
+    SyncModeOsc.ar(
+        58, Impulse.ar(LFNoise1.kr(0.2).exprange(3, 70)),
+        mode: 3, resetPhase: 0.25,
+        symmetry: LFNoise1.kr(0.1).range(0.1, 0.9),
+        shape: 3, softness: 0.03, oversample: 4
+    ) * 0.065;
+}.play;
+)
+::
+
+subsection:: See also
+
+link::Guides/NovelOscillators::
+link::Classes/SyncSaw::
+link::Classes/Phasor::

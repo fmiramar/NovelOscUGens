@@ -1,0 +1,115 @@
+class:: PitchRegisterOsc
+summary:: Sample-coherent pitch register driving an oscillator family
+categories:: UGens>Generators>Deterministic
+related:: Guides/NovelOscillators
+
+description::
+
+PitchRegisterOsc is a language-side graph constructor. A small internal server
+primitive shifts literal initial scale degrees on each audio-rate rising edge;
+the language graph then uses DegreeToKey, Lag, and one oscillator per register
+position. HarmonicStrideOsc supplies the preferred voices and Blip is the
+dependency-free fallback.
+
+The closest vanilla UGen is link::Classes/DegreeToKey::. DegreeToKey performs
+the scale lookup, while PitchRegisterOsc also retains an ordered history,
+glides its resulting frequencies, and sonifies every position.
+
+classmethods::
+
+method:: ar
+
+argument:: trig
+Audio- or control-rate trigger. Each nonpositive-to-positive edge shifts
+exactly once.
+
+argument:: degree
+New scale degree written into position zero on a trigger.
+
+argument:: scaleBuf
+Buffer containing scale semitone offsets for DegreeToKey.
+
+argument:: root
+Frequency in hertz corresponding to zero semitones.
+
+argument:: initialDegrees
+One to 32 finite literal degrees. Its size fixes output count and register
+storage at construction.
+
+argument:: harmonics
+Literal harmonic limit from code::1:: through code::16384::.
+
+argument:: decay
+Harmonic decay used by HarmonicStrideOsc when available.
+
+argument:: glide
+Frequency smoothing time in seconds. It does not alter register timing.
+
+argument:: mul
+Multiplier applied independently to every voice.
+
+argument:: add
+Offset added to every voice after multiplication.
+
+returns::
+One audio channel per register position, newest degree first.
+
+method:: kr
+
+PitchRegisterOsc is audio-rate only. This method throws an error.
+
+subsection:: Discussion
+
+The register is implemented as a minimal native component because a downstream
+audio Buffer reader can otherwise observe block-final LocalBuf state after
+multiple same-block demand writes. Pitch conversion and synthesis deliberately
+remain ordinary language-side graph construction. Voice phase offsets are
+fixed by register index.
+
+examples::
+
+code::
+(
+Routine({
+    var scale = Buffer.loadCollection(
+        s, Scale.minorPentatonic.degrees
+    );
+    s.sync;
+    {
+        var trig = Impulse.ar(2);
+        var degree = Demand.ar(
+            trig, 0, Dseq([0, 2, 4, 7, 5, 3], inf)
+        );
+        Splay.ar(
+            PitchRegisterOsc.ar(trig, degree, scale, 55)
+        ) * 0.045;
+    }.play;
+}).play;
+)
+::
+
+code::
+(
+Routine({
+    var scale = Buffer.loadCollection(s, Scale.dorian.degrees);
+    s.sync;
+    {
+        var trig = Dust.ar(3);
+        var degree = Demand.ar(trig, 0, Drand((0..14), inf));
+        Splay.ar(
+            PitchRegisterOsc.ar(
+                trig, degree, scale, 46,
+                initialDegrees: [0, -2, -4, -7],
+                harmonics: 24, decay: 0.85, glide: 0.04
+            )
+        ) * 0.04;
+    }.play;
+}).play;
+)
+::
+
+subsection:: See also
+
+link::Guides/NovelOscillators::
+link::Classes/DegreeToKey::
+link::Classes/HarmonicStrideOsc::

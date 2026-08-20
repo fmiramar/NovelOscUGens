@@ -1,0 +1,159 @@
+name: build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: ${{ matrix.platform }}-${{ matrix.arch }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            platform: linux
+            arch: x86_64
+            cmake_arch: ""
+          - os: macos-13
+            platform: macos
+            arch: x86_64
+            cmake_arch: "-DCMAKE_OSX_ARCHITECTURES=x86_64"
+          - os: macos-13
+            platform: macos
+            arch: arm64
+            cmake_arch: "-DCMAKE_OSX_ARCHITECTURES=arm64"
+          - os: windows-2022
+            platform: windows
+            arch: x86_64
+            cmake_arch: "-A x64"
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Check out NovelOscUGens
+        uses: actions/checkout@v4
+        with:
+          path: NovelOscUGens
+
+      - name: Check out SuperCollider headers
+        uses: actions/checkout@v4
+        with:
+          repository: supercollider/supercollider
+          ref: Version-3.14.1
+          path: supercollider
+          submodules: false
+
+      - name: Configure
+        shell: bash
+        run: |
+          cmake -S NovelOscUGens -B build \
+            ${{ matrix.cmake_arch }} \
+            -DSC_PATH="$GITHUB_WORKSPACE/supercollider" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DSCSYNTH=ON \
+            -DSUPERNOVA=OFF \
+            -DSTRICT=ON \
+            -DBUILD_TESTING=ON \
+            -DCMAKE_INSTALL_PREFIX="$GITHUB_WORKSPACE/stage"
+
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      - name: Test
+        run: ctest --test-dir build -C Release --output-on-failure
+
+      - name: Stage extension
+        run: cmake --install build --config Release
+
+      - name: Upload extension
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.repository_owner }}-NovelOscUGens-0.2.0-${{ matrix.platform }}-${{ matrix.arch }}
+          path: stage/NovelOscUGens
+          if-no-files-found: error
+
+  supernova:
+    name: linux-x86_64-supernova
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Check out NovelOscUGens
+        uses: actions/checkout@v4
+        with:
+          path: NovelOscUGens
+
+      - name: Check out SuperCollider SDK
+        uses: actions/checkout@v4
+        with:
+          repository: supercollider/supercollider
+          ref: Version-3.14.1
+          path: supercollider
+          submodules: recursive
+
+      - name: Configure
+        run: >-
+          cmake -S NovelOscUGens -B build-supernova
+          -DSC_PATH="${{ github.workspace }}/supercollider"
+          -DCMAKE_BUILD_TYPE=Release
+          -DSCSYNTH=OFF
+          -DSUPERNOVA=ON
+          -DSTRICT=ON
+          -DBUILD_TESTING=ON
+          -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/stage-supernova"
+
+      - name: Build
+        run: cmake --build build-supernova --parallel
+
+      - name: Test
+        run: >-
+          ctest --test-dir build-supernova
+          --output-on-failure
+
+      - name: Stage extension
+        run: cmake --install build-supernova
+
+      - name: Upload extension
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.repository_owner }}-NovelOscUGens-0.2.0-linux-x86_64-supernova
+          path: stage-supernova/NovelOscUGens
+          if-no-files-found: error
+
+  sanitizers:
+    name: linux-x86_64-sanitizers
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Check out NovelOscUGens
+        uses: actions/checkout@v4
+        with:
+          path: NovelOscUGens
+
+      - name: Check out SuperCollider headers
+        uses: actions/checkout@v4
+        with:
+          repository: supercollider/supercollider
+          ref: Version-3.14.1
+          path: supercollider
+          submodules: false
+
+      - name: Configure
+        run: >-
+          cmake -S NovelOscUGens -B build-sanitize
+          -DSC_PATH="${{ github.workspace }}/supercollider"
+          -DCMAKE_BUILD_TYPE=Debug
+          -DSCSYNTH=OFF
+          -DSUPERNOVA=OFF
+          -DSTRICT=ON
+          -DBUILD_TESTING=ON
+          -DNOVEL_OSC_SANITIZE=ON
+
+      - name: Build and test
+        run: |
+          cmake --build build-sanitize --parallel
+          ctest --test-dir build-sanitize --output-on-failure

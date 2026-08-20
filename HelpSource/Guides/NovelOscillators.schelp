@@ -1,0 +1,172 @@
+title:: Novel Oscillators
+summary:: Nineteen clean-room experimental oscillator designs
+categories:: UGens>Generators
+
+description::
+
+NovelOscUGens is an experimental clean-room collection of oscillator designs
+based on published mathematics and standard digital-synthesis techniques. It
+contains no extracted firmware, factory wavetable, preset, panel artwork, or
+copied product documentation. Each class is audio-rate only and uses a signed
+phase model, bounded outputs, finite-value guards, and initialization-time
+validation. The v0.2 set adds scanned synthesis, vector phaseshaping,
+spectral-frame resynthesis, explicit synchronization laws, state-space
+feedback, digital logic, three-dimensional wavetables, and two language-side
+oscillator constructors.
+
+subsection:: Series
+
+link::Classes/HarmonicStrideOsc:: evaluates a geometrically weighted harmonic
+or fractional-stride series as one closed-form complex sum. It returns sine and
+cosine views of the same spectrum.
+
+subsection:: Wavetables and transforms
+
+link::Classes/TableMorph2D:: traverses a user-prepared two-dimensional,
+mipmapped wavetable surface.
+
+link::Classes/TableMorph3D:: extends the shared prepared-table backend to a
+trilinearly interpolated waveform volume.
+
+link::Classes/SpectralBasisOsc:: shapes coefficients and applies inverse
+Fourier, Walsh, Haar, or Daubechies-4 transforms to create an internal
+mipmapped waveform.
+
+link::Classes/SpectralFrameBuffer:: validates and loads ratio-and-amplitude
+frames for link::Classes/SpectralFrameOsc::, which interpolates them with
+independent, phase-continuous partial oscillators.
+
+subsection:: Through-zero and synchronized modulation
+
+link::Classes/TZSplitOsc:: combines true signed phase motion, an asymmetric
+BLAMP triangle, nonlinear drive, and even/odd decomposition.
+
+link::Classes/SyncRingOsc:: derives two synchronized modulators from one
+carrier and applies two sequential ring-modulation stages.
+
+link::Classes/SyncModeOsc:: applies six explicit phase-event laws to sine,
+triangle, saw, or pulse playback.
+
+link::Classes/PMNetworkOsc:: is a three-operator network with independent
+row-major PM and through-zero linear-FM matrices.
+
+link::Classes/ClusterPMOsc:: is a four-operator PM network whose operators are
+themselves normalized four-component additive clusters.
+
+link::Classes/VectorPhaseOsc:: moves oscillator phase through one to eight
+two-dimensional breakpoints.
+
+link::Classes/RippleFormantOsc:: launches two decaying and chirped ripples on
+each base-oscillator cycle.
+
+subsection:: Dynamic and feedback systems
+
+link::Classes/ScannedNetworkOsc:: scans a slowly integrated one-dimensional
+mass-spring network as a changing waveform.
+
+link::Classes/ShiftLogicOsc:: couples two triangle oscillators through a seeded
+binary register and DAC feedback.
+
+link::Classes/QuadratureFeedbackOsc:: integrates a regulated nonlinear
+two-state orbit and exposes four signed directions.
+
+subsection:: Large oscillator banks
+
+link::Classes/PartialClusterOsc:: generates a procedurally warped and shaped
+additive spectrum with deterministic unison voices.
+
+link::Classes/ScaleSpreadOsc:: distributes a fixed oscillator bank over an
+arbitrary ascending ratio scale with continuous crossfades between degrees.
+
+link::Classes/RatioFamilyOsc:: builds a phase-shaped family from a literal
+ratio set and a logarithmic spread control.
+
+link::Classes/PitchRegisterOsc:: remembers recent scale degrees sample
+coherently and turns every register position into an oscillator voice.
+
+subsection:: Shared conventions
+
+Every oscillator class implements code::.ar:: and deliberately rejects
+code::.kr::.
+Initialization-rate integers and fixed array sizes are checked by the language
+classes and again by the server plugin where relevant. PM phase values and
+phase offsets are expressed in radians; oscillator accumulation is internal
+cycles. Signed frequency reverses phase motion.
+
+Every public code::.ar:: ends with code::mul:: and code::add::. Multi-output
+classes apply them independently after the native calculation.
+
+Waveform indices, where a class offers four shapes, are code::0:: sine,
+code::1:: triangle, code::2:: saw, and code::3:: pulse.
+
+The code::oversample:: argument is fixed at construction and normally accepts
+code::1::, code::2::, or code::4::. QuadratureFeedbackOsc also accepts
+code::8::. Oversampling increases CPU approximately with the factor and is
+most useful for nonlinear or modulation-rich patches.
+
+subsection:: Integrated example
+
+The buffer setup runs in a Routine and synchronizes the server before the
+Synth starts.
+
+code::
+(
+Routine({
+    var scaleBuffer = ScaleSpreadOsc.prepareScale(
+        s, [1, 9/8, 5/4, 4/3, 3/2, 5/3, 15/8]
+    );
+    s.sync;
+
+    {
+        var root = 38;
+        var scaleLayer = ScaleSpreadOsc.ar(
+            scaleBuffer, root,
+            center: LFNoise2.kr(0.12).range(-7, 7),
+            spread: LFTri.kr(0.035).range(0.3, 1.8),
+            voices: 10, modulation: 0.15, stereo: 0.9
+        );
+        var harmonicLayer = Splay.ar(
+            HarmonicStrideOsc.ar(
+                root * 2,
+                LFNoise1.kr(0.18).range(0.5, 2.5),
+                0.9
+            )
+        );
+        var partialLayer = PartialClusterOsc.ar(
+            root, partials: 180,
+            warp: LFNoise1.kr(0.08).range(-0.12, 0.18),
+            tilt: 1.4, combPeriod: 7, combDepth: 0.55,
+            voices: 3, detune: 0.07,
+            maxPartials: 256
+        );
+        var signal = (scaleLayer * 0.45)
+            + (harmonicLayer * 0.2)
+            + (partialLayer * 0.25);
+        Limiter.ar(LeakDC.ar(signal), 0.8, 0.01) * 0.08
+    }.play;
+}).play;
+)
+::
+
+subsection:: See also
+
+link::Classes/HarmonicStrideOsc::
+link::Classes/TableMorph2D::
+link::Classes/TZSplitOsc::
+link::Classes/ScaleSpreadOsc::
+link::Classes/SpectralBasisOsc::
+link::Classes/PartialClusterOsc::
+link::Classes/SyncRingOsc::
+link::Classes/PMNetworkOsc::
+link::Classes/ClusterPMOsc::
+link::Classes/ScannedNetworkOsc::
+link::Classes/VectorPhaseOsc::
+link::Classes/SpectralFrameBuffer::
+link::Classes/SpectralFrameOsc::
+link::Classes/RippleFormantOsc::
+link::Classes/ShiftLogicOsc::
+link::Classes/QuadratureFeedbackOsc::
+link::Classes/SyncModeOsc::
+link::Classes/TableMorph3D::
+link::Classes/RatioFamilyOsc::
+link::Classes/PitchRegisterOsc::

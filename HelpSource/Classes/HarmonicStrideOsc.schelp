@@ -1,0 +1,92 @@
+class:: HarmonicStrideOsc
+summary:: Geometrically weighted harmonic or inharmonic series
+categories:: UGens>Generators>Deterministic
+related:: Guides/NovelOscillators
+
+description::
+
+HarmonicStrideOsc creates a finite series from one signed phase accumulator.
+code::stride:: sets the ratio spacing and code::decay:: geometrically weights
+successive components. It returns sine and cosine versions of the same
+spectrum.
+
+Internally, the UGen evaluates a stable finite complex geometric sum rather
+than running one oscillator per partial. Components at Nyquist are removed and
+the final active component is smoothly faded. Changing code::stride:: changes
+how the shared phase is read, producing spectral phase warping rather than
+independently integrated partial phases.
+
+The closest vanilla UGen is link::Classes/Blip::. Both generate a compact
+harmonic spectrum, but HarmonicStrideOsc supports fractional spacing,
+geometric amplitude decay, signed frequency, and quadrature outputs.
+
+classmethods::
+
+method:: ar
+
+argument:: freq
+Signed base frequency in hertz. Negative values reverse phase motion.
+
+argument:: stride
+Positive ratio spacing between components. code::1:: gives the conventional
+harmonic sequence; fractional values create inharmonic spacing.
+
+argument:: decay
+Geometric amplitude multiplier from just above code::-1:: to just below
+code::1::. Negative values alternate component polarity.
+
+argument:: phase
+Readout phase offset in radians. It does not alter accumulated phase.
+
+argument:: normalize
+Crossfade from the raw sum at code::0:: to absolute-amplitude normalization at
+code::1::.
+
+argument:: maxPartials
+Initialization-rate integer from code::1:: through code::16384::. It caps the
+series before Nyquist culling.
+
+argument:: mul
+Multiplier applied to both outputs.
+
+argument:: add
+Offset added to both outputs after multiplication.
+
+returns::
+An array containing the sine-like sum followed by its cosine-like quadrature
+sum.
+
+method:: kr
+
+HarmonicStrideOsc is audio-rate only. This method throws an error.
+
+subsection:: Discussion
+
+The output is bounded using the active absolute-amplitude sum when
+code::normalize:: is enabled. A near-unity decay uses a stable limiting form,
+so legal extreme values remain finite. At zero frequency, the phase stops and
+the current complex sum is held.
+
+examples::
+
+code::
+(
+{ HarmonicStrideOsc.ar(110, 1, 0.8)[0] * 0.08 }.play;
+)
+::
+
+code::
+(
+{
+    var stride = LFNoise1.kr(0.3).range(0.4, 2.4);
+    var decay = LFNoise1.kr(0.2).range(0.6, 0.96);
+    Splay.ar(HarmonicStrideOsc.ar(55, stride, decay)) * 0.045;
+}.play;
+)
+::
+
+subsection:: See also
+
+link::Guides/NovelOscillators::
+link::Classes/Blip::
+link::Classes/Klang::

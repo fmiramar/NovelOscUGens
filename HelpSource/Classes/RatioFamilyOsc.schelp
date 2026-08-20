@@ -1,0 +1,89 @@
+class:: RatioFamilyOsc
+summary:: Language-side family of continuously spread phase-shaped oscillators
+categories:: UGens>Generators>Deterministic
+related:: Guides/NovelOscillators
+
+description::
+
+RatioFamilyOsc is a language-side graph constructor. It creates one signed
+Phasor and sine reader per literal ratio. code::spread:: moves ratios in
+log-frequency space, while code::skew:: and code::curve:: bend two continuous
+phase segments. No dedicated server UGen or optional Quark is required.
+
+The closest vanilla construction is an array of link::Classes/SinOsc:: UGens.
+RatioFamilyOsc adds validated ratio spreading, signed phase accumulation, and
+a shared two-segment phase-shaping law.
+
+classmethods::
+
+method:: ar
+
+argument:: freq
+Signed root frequency in hertz.
+
+argument:: ratios
+One to 32 positive finite literal ratios.
+
+argument:: spread
+Logarithmic spread. Zero produces unison, one preserves supplied ratios, and
+negative values move toward reciprocal relationships.
+
+argument:: skew
+Input position of the phase breakpoint, clipped to code::0.001..0.999::.
+
+argument:: curve
+Quadratic segment bend, clipped to code::-1..1::. Endpoints and cycle
+continuity do not move.
+
+argument:: linearFM
+Signed frequency offset in hertz applied to every voice after ratio spreading.
+
+argument:: phase
+Initial/readout phase in radians.
+
+argument:: mul
+Multiplier applied independently to every output.
+
+argument:: add
+Offset added to every output after multiplication.
+
+returns::
+One audio channel per ratio, in input order.
+
+method:: kr
+
+RatioFamilyOsc is audio-rate only. This method throws an error.
+
+subsection:: Discussion
+
+The mapping's output breakpoint is one half cycle. Therefore
+code::skew = 0.5:: and code::curve = 0:: are neutral. Construction cost and
+server graph size grow linearly with the ratio count.
+
+examples::
+
+code::
+(
+{ Splay.ar(RatioFamilyOsc.ar(70)) * 0.045 }.play;
+)
+::
+
+code::
+(
+{
+    Splay.ar(
+        RatioFamilyOsc.ar(
+            51, [1, 7/6, 4/3, 3/2, 7/4, 2],
+            spread: LFTri.kr(0.05).range(-0.5, 1.5),
+            skew: 0.35, curve: 0.4
+        )
+    ) * 0.04;
+}.play;
+)
+::
+
+subsection:: See also
+
+link::Guides/NovelOscillators::
+link::Classes/SinOsc::
+link::Classes/Phasor::

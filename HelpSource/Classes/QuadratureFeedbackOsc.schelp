@@ -1,0 +1,93 @@
+class:: QuadratureFeedbackOsc
+summary:: Four-output regulated nonlinear rotating system
+categories:: UGens>Generators>Deterministic
+related:: Guides/NovelOscillators
+
+description::
+
+QuadratureFeedbackOsc integrates a two-state Hopf-style rotating system and
+returns its four signed directions. Nonlinear feedback distorts the orbit,
+external input can push it, and radial regulation attracts it toward unit
+radius. RK4 integration runs inside a filtered initialization-rate oversampling
+factor.
+
+The closest vanilla UGen is link::Classes/SinOsc::. With no feedback it behaves
+as a regulated quadrature oscillator; unlike SinOsc it accepts nonlinear
+state feedback and external injection.
+
+classmethods::
+
+method:: ar
+
+argument:: freq
+Signed natural rotation frequency in hertz.
+
+argument:: input
+External audio signal.
+
+argument:: feedback
+Exactly four feedback values corresponding to x, y, -x, and -y. Each is
+clamped to code::-8..8::.
+
+argument:: inject
+External-input amount in the x feedback path, clamped to code::-8..8::.
+
+argument:: stability
+Radial regulation strength, clamped to code::0..16::.
+
+argument:: drive
+Soft-saturation drive for feedback paths, clamped to code::0..16::.
+
+argument:: oversample
+Initialization-rate factor code::1::, code::2::, code::4::, or code::8::.
+
+argument:: mul
+Multiplier applied to all four outputs.
+
+argument:: add
+Offset added to all four outputs after multiplication.
+
+returns::
+Four sample-coherent signals in the order x, y, -x, -y.
+
+method:: kr
+
+QuadratureFeedbackOsc is audio-rate only. This method throws an error.
+
+subsection:: Discussion
+
+Normal outputs are not clipped. A safety limiter rescales the internal state
+only if radius exceeds four, and nonfinite state returns to code::[1, 0]::.
+Because the last two outputs are generated from the filtered first two, their
+sign relations are exact.
+
+examples::
+
+code::
+(
+{ Splay.ar(QuadratureFeedbackOsc.ar(90)) * 0.045 }.play;
+)
+::
+
+code::
+(
+{
+    var feedback = LFNoise1.kr(
+        [0.11, 0.13, 0.17, 0.19]
+    ).range(-1.3, 1.3);
+    Splay.ar(
+        QuadratureFeedbackOsc.ar(
+            57, Saw.ar(31, 0.08), feedback,
+            inject: 0.6, stability: 1.8,
+            drive: 3.5, oversample: 8
+        )
+    ) * 0.035;
+}.play;
+)
+::
+
+subsection:: See also
+
+link::Guides/NovelOscillators::
+link::Classes/SinOsc::
+link::Classes/Hilbert::

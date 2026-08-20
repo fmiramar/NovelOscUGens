@@ -1,0 +1,139 @@
+class:: ScaleSpreadOsc
+summary:: Continuously crossfaded oscillator bank distributed across a scale
+categories:: UGens>Generators>Deterministic
+related:: Guides/NovelOscillators
+
+description::
+
+ScaleSpreadOsc places a fixed number of oscillators across a scale stored as
+frequency ratios. code::center:: moves the group and code::spread:: changes
+the scale distance between adjacent voices. Fractional coordinates use
+equal-power crossfades between neighboring degrees.
+
+The scale buffer must be mono, contain at least two strictly ascending positive
+ratios, and begin with exactly code::1::. The last entry must be below
+code::period::. code::prepareScale:: performs the language-side checks and
+loads the buffer.
+
+Internally, every voice keeps a lower- and upper-degree phase, crossfades their
+waveforms, optionally receives previous-sample modulation from its nearest
+neighbor, and is distributed across stereo. The closest vanilla building block
+is link::Classes/VOsc::. ScaleSpreadOsc differs by mapping a fixed oscillator
+bank through arbitrary scale ratios rather than adjacent waveform buffers.
+
+classmethods::
+
+method:: ar
+
+argument:: bufnum
+Number of a scale-ratio buffer prepared with code::prepareScale::.
+
+argument:: freq
+Signed root frequency in hertz.
+
+argument:: center
+Continuous scale coordinate at the center of the voice group. Negative values
+wrap through lower periods.
+
+argument:: spread
+Distance in scale degrees between adjacent voices.
+
+argument:: voices
+Initialization-rate integer from code::1:: through code::32::. It remains
+fixed for the life of the UGen.
+
+argument:: period
+Frequency ratio of one complete scale period. It must exceed the last stored
+degree and is clamped no higher than code::16::.
+
+argument:: modulation
+Nearest-neighbor phase-modulation depth in radians.
+
+argument:: stereo
+Stereo distribution from code::0:: to code::1::. At code::0:: the returned
+channels are identical.
+
+argument:: waveform
+Initialization-rate waveform: code::0:: sine, code::1:: triangle, or code::2::
+saw.
+
+argument:: mul
+Multiplier applied to both outputs.
+
+argument:: add
+Offset added to both outputs after multiplication.
+
+returns::
+A stereo array.
+
+method:: prepareScale
+
+argument:: server
+The server that will own the buffer. The default is code::Server.default::.
+
+argument:: ratios
+A collection of at least two positive, finite, strictly ascending ratios whose
+first value is code::1::.
+
+argument:: action
+Function passed to link::Classes/Buffer#*loadCollection:: after loading.
+
+returns::
+The allocated mono Buffer. Loading is asynchronous; call code::s.sync:: before
+starting a Synth when using the return value directly.
+
+method:: kr
+
+ScaleSpreadOsc is audio-rate only. This method throws an error.
+
+subsection:: Discussion
+
+The UGen validates and remembers the buffer identity at construction. Freeing
+or reallocating the buffer makes the instance silent and reports one server
+error. Sine, triangle, and saw choices share the continuous scale mapping;
+triangle and saw use bandlimiting helpers.
+
+examples::
+
+code::
+(
+Routine({
+    var scale = ScaleSpreadOsc.prepareScale(
+        s, [1, 9/8, 5/4, 4/3, 3/2, 5/3, 15/8]
+    );
+    s.sync;
+    {
+        ScaleSpreadOsc.ar(
+            scale, 55, spread: 1, voices: 8
+        ) * 0.06
+    }.play;
+}).play;
+)
+::
+
+code::
+(
+Routine({
+    var scale = ScaleSpreadOsc.prepareScale(
+        s, [1, 8/7, 4/3, 3/2, 7/4]
+    );
+    s.sync;
+    {
+        ScaleSpreadOsc.ar(
+            scale, 48,
+            center: LFNoise2.kr(0.15).range(-5, 5),
+            spread: LFTri.kr(0.04).range(0.25, 2),
+            voices: 12, period: 2,
+            modulation: 0.15, stereo: 0.9,
+            waveform: 1
+        ) * 0.045
+    }.play;
+}).play;
+)
+::
+
+subsection:: See also
+
+link::Guides/NovelOscillators::
+link::Classes/VOsc::
+link::Classes/DynKlang::

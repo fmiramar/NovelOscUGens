@@ -1,0 +1,101 @@
+class:: ClusterPMOsc
+summary:: Four-operator PM network with additive-cluster operators
+categories:: UGens>Generators>Deterministic
+related:: Guides/NovelOscillators
+
+description::
+
+ClusterPMOsc is a four-operator phase-modulation network in which every
+operator contains four sine components. Shared cluster ratios and amplitudes
+define the local spectrum; the PM matrix defines how operator outputs interact.
+
+The sixteen PM entries use row-major order. Entry
+code::(row * 4) + column:: routes the preceding oversampled substep of operator
+code::column:: into operator code::row::. Each local cluster removes
+components at Nyquist with a smooth fade and normalizes by its active absolute
+amplitude sum.
+
+The closest vanilla UGen is link::Classes/Klang::. Both sum fixed-ratio sine
+components, but ClusterPMOsc embeds four such sums in a feedback-capable PM
+network with audio-rate matrix elements and optional oversampling.
+
+classmethods::
+
+method:: ar
+
+argument:: freq
+Signed network base frequency in hertz.
+
+argument:: ratios
+Exactly four operator-frequency ratios. Elements may be audio rate.
+
+argument:: clusterRatios
+Exactly four shared local component ratios, clamped to code::-64..64::.
+
+argument:: clusterAmplitudes
+Exactly four shared local component amplitudes, clamped to code::-8..8::.
+
+argument:: pm
+Exactly sixteen row-major PM coefficients in radians. Elements may be audio
+rate.
+
+argument:: amplitudes
+Exactly four operator output amplitudes, clamped to code::-4..4::.
+
+argument:: oversample
+Initialization-rate value code::1::, code::2::, or code::4::.
+
+argument:: mul
+Multiplier applied to all four outputs.
+
+argument:: add
+Offset added to all four outputs after multiplication.
+
+returns::
+An array containing operators 0 through 3.
+
+method:: kr
+
+ClusterPMOsc is audio-rate only. This method throws an error.
+
+subsection:: Discussion
+
+A zero PM matrix produces four independent additive oscillators. A local
+cluster whose only nonzero component is ratio one reduces to a sine operator.
+Feedback always reads the preceding internal substep, which prevents
+algebraic loops and makes repeated renders deterministic.
+
+examples::
+
+code::
+(
+{ ClusterPMOsc.ar(70)[0] * 0.075 }.play;
+)
+::
+
+code::
+(
+{
+    var pm = [
+        0, 2, 0, 0,
+        0, 0, 1, 0,
+        0.5, 0, 0, 1,
+        0, 0.3, 0, 0
+    ];
+    Splay.ar(
+        ClusterPMOsc.ar(
+            55, [1, 1.5, 2, 3],
+            [1, 1.01, 2, 3],
+            [1, 0.3, 0.15, 0.08],
+            pm, [1, 0.4, 0.2, 0.1], 2
+        )
+    ) * 0.035;
+}.play;
+)
+::
+
+subsection:: See also
+
+link::Guides/NovelOscillators::
+link::Classes/Klang::
+link::Classes/SinOscFB::

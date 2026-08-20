@@ -1,0 +1,100 @@
+class:: TZSplitOsc
+summary:: Through-zero oscillator with related spectral-section outputs
+categories:: UGens>Generators>Deterministic
+related:: Guides/NovelOscillators
+
+description::
+
+TZSplitOsc is a through-zero oscillator whose signed phase can reverse
+continuously. code::symmetry:: introduces even harmonics, code::drive::
+increases spectral density, and the even and odd sections can be processed
+separately.
+
+The asymmetric triangle corners use polynomial BLAMP correction. Drive runs in
+an optionally oversampled domain and a fourth-order low-pass decimator returns
+the result to the server sample rate. Reset and flip triggers are sample
+accurate; if both arrive together, reset occurs first and flip second.
+
+The closest vanilla UGen is link::Classes/LFTri::. Both provide triangle-like
+motion, but TZSplitOsc supports signed through-zero frequency, BLAMP corners,
+nonlinear drive, phase control, and a four-part output decomposition.
+
+classmethods::
+
+method:: ar
+
+argument:: freq
+Signed base frequency in hertz.
+
+argument:: linearFM
+Signed frequency offset in hertz. It may push the total frequency through zero.
+
+argument:: phaseMod
+Readout phase modulation in radians. It does not change accumulated phase.
+
+argument:: symmetry
+Triangle peak position, clamped to code::0.02..0.98::. code::0.5:: is
+symmetric.
+
+argument:: drive
+Nonlinear shaping amount, clamped to code::1..16::. code::1:: is neutral.
+
+argument:: reset
+A nonpositive-to-positive edge resets phase to zero.
+
+argument:: flip
+A nonpositive-to-positive edge advances phase by half a cycle.
+
+argument:: oversample
+Initialization-rate value code::1::, code::2::, or code::4::.
+
+argument:: mul
+Multiplier applied to all four outputs.
+
+argument:: add
+Offset added to all four outputs after multiplication.
+
+returns::
+Four signals in this order: sine reference, even section, odd section, and
+full shaped waveform. Even plus odd reconstructs full within floating-point
+tolerance.
+
+method:: kr
+
+TZSplitOsc is audio-rate only. This method throws an error.
+
+subsection:: Discussion
+
+The even section becomes very small near code::symmetry = 0.5::. Oversampling
+cost grows approximately with its factor and is most useful when drive or
+rapid modulation produces strong upper partials.
+
+examples::
+
+code::
+(
+{ TZSplitOsc.ar(110, symmetry: 0.35, drive: 2)[3] * 0.08 }.play;
+)
+::
+
+code::
+(
+{
+    var signal = TZSplitOsc.ar(
+        70,
+        linearFM: SinOsc.ar(53, 0, 90),
+        phaseMod: SinOsc.ar(2, 0, 2),
+        symmetry: LFTri.kr(0.1).range(0.15, 0.85),
+        drive: 3,
+        oversample: 4
+    );
+    Splay.ar([signal[1], signal[2]]) * 0.055;
+}.play;
+)
+::
+
+subsection:: See also
+
+link::Guides/NovelOscillators::
+link::Classes/LFTri::
+link::Classes/SinOscFB::

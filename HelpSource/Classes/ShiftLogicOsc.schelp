@@ -1,0 +1,104 @@
+class:: ShiftLogicOsc
+summary:: Oscillator-clocked binary register with frequency feedback
+categories:: UGens>Generators>Deterministic
+related:: Guides/NovelOscillators
+
+description::
+
+ShiftLogicOsc couples two bandlimited triangle oscillators through a fixed-size
+binary shift register. Oscillator A clocks the register, oscillator B supplies
+comparator data, and the oldest selected bits form a bipolar DAC value that
+feeds both frequencies in octaves. Random decisions use only the
+construction-time seed.
+
+The closest vanilla building blocks are link::Classes/LFTri:: and
+link::Classes/Stepper::. ShiftLogicOsc keeps oscillator phase, bit updates, DAC
+conversion, and feedback in one sample-coherent server state.
+
+classmethods::
+
+method:: ar
+
+argument:: freqA
+Signed base frequency of the clock oscillator in hertz.
+
+argument:: freqB
+Signed base frequency of the data oscillator in hertz.
+
+argument:: feedbackA
+Clock-frequency feedback depth in octaves, clamped to code::-8..8::.
+
+argument:: feedbackB
+Data-frequency feedback depth in octaves, clamped to code::-8..8::.
+
+argument:: compare
+Threshold compared with oscillator B.
+
+argument:: change
+Probability of shifting a new candidate bit, clamped to code::0..1::. A failed
+decision rotates the existing register.
+
+argument:: slew
+Smoothing time for the fifth output in seconds. It does not affect feedback.
+
+argument:: bits
+Initialization-rate register length from code::3:: through code::32::.
+
+argument:: dacBits
+Initialization-rate count of oldest bits used by the DAC, from code::1::
+through code::bits::.
+
+argument:: mode
+Initialization-rate data rule: code::0:: comparator, code::1:: comparator XOR
+oldest bit, code::2:: rotate oldest bit, or code::3:: seeded random bit.
+
+argument:: seed
+Initialization-rate nonnegative deterministic seed.
+
+argument:: mul
+Multiplier applied to all five outputs.
+
+argument:: add
+Offset added to all five outputs after multiplication.
+
+returns::
+Clock oscillator, data oscillator, current least-significant bit, bipolar DAC
+step, and smoothed DAC value.
+
+method:: kr
+
+ShiftLogicOsc is audio-rate only. This method throws an error.
+
+subsection:: Discussion
+
+The unsmoothed value code::q:: sets effective frequency as
+code::f * 2.pow(feedback * q)::. A phase boundary clocks the same deterministic
+rule for either sign of frequency. All storage is contained in the UGen.
+
+examples::
+
+code::
+(
+{ ShiftLogicOsc.ar(90, 113)[4] * 0.07 }.play;
+)
+::
+
+code::
+(
+{
+    var signal = ShiftLogicOsc.ar(
+        51, 73, feedbackA: 1.1, feedbackB: -0.7,
+        compare: LFNoise1.kr(0.2).range(-0.4, 0.4),
+        change: 0.7, slew: 0.06,
+        bits: 12, dacBits: 5, seed: 9182
+    );
+    Splay.ar([signal[0], signal[1], signal[4]]) * 0.045;
+}.play;
+)
+::
+
+subsection:: See also
+
+link::Guides/NovelOscillators::
+link::Classes/LFTri::
+link::Classes/Stepper::

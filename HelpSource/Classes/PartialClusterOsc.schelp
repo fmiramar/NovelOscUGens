@@ -1,0 +1,114 @@
+class:: PartialClusterOsc
+summary:: Spectrally shaped additive oscillator with unison voices
+categories:: UGens>Generators>Deterministic
+related:: Guides/NovelOscillators
+
+description::
+
+PartialClusterOsc creates a large additive spectrum whose partial spacing,
+frequency warp, amplitude tilt, periodic attenuation, phase distribution, and
+unison detuning can move continuously.
+
+For zero-based partial index code::n::, the ratio is
+code::(1 + (n * spacing)) ** (2 ** warp)::. A smooth activation edge follows
+code::partials::, a raised-cosine mask implements spectral combing, and
+components fade out before Nyquist. The active absolute-amplitude sum
+normalizes each voice.
+
+The closest vanilla UGen is link::Classes/Klang::. Both sum many sinusoidal
+components, but PartialClusterOsc generates the spectrum procedurally at audio
+rate, culls it against Nyquist, and includes deterministic unison and stereo
+distribution.
+
+classmethods::
+
+method:: ar
+
+argument:: freq
+Signed fundamental frequency in hertz.
+
+argument:: partials
+Continuous active-partial count from zero through code::maxPartials::.
+
+argument:: spacing
+Positive linear distance before warping. code::1:: is harmonic when
+code::warp:: is zero.
+
+argument:: warp
+Exponent control. code::0:: is neutral; negative values compress and positive
+values expand upper ratios.
+
+argument:: tilt
+Power-law spectral slope. Larger values reduce upper partials.
+
+argument:: combPeriod
+Period of the smooth attenuation pattern in partial indices.
+
+argument:: combDepth
+Attenuation strength from code::0:: through code::1::. Zero is transparent.
+
+argument:: voices
+Initialization-rate unison count from code::1:: through code::5::.
+
+argument:: detune
+Maximum symmetric unison detuning in semitones.
+
+argument:: phaseSpread
+Deterministic partial-phase dispersion from code::0:: through code::1::.
+
+argument:: maxPartials
+Initialization-rate computation limit from code::1:: through code::4096::.
+
+argument:: mul
+Multiplier applied to both outputs.
+
+argument:: add
+Offset added to both outputs after multiplication.
+
+returns::
+A stereo array.
+
+method:: kr
+
+PartialClusterOsc is audio-rate only. This method throws an error.
+
+subsection:: Discussion
+
+High code::partials:: and code::voices:: values are intentionally expensive:
+work and private memory scale with the product of code::maxPartials:: and
+code::voices::. Scalar and control-rate shaping uses block-cooked weights and
+recursive complex oscillators. If any shaping input is audio rate, the UGen
+switches at construction to an exact per-sample path, which is substantially
+more expensive and does not allocate the recursive bank. Extreme legal
+settings are normalized and finite, but a limiter is still useful when
+combining several instances.
+
+examples::
+
+code::
+(
+{ PartialClusterOsc.ar(55, 96, tilt: 1.2) * 0.045 }.play;
+)
+::
+
+code::
+(
+{
+    PartialClusterOsc.ar(
+        38, partials: 240,
+        warp: LFNoise1.kr(0.1).range(-0.15, 0.18),
+        tilt: 1.3,
+        combPeriod: LFNoise1.kr(0.07).range(2, 13),
+        combDepth: LFTri.kr(0.05).range(0, 0.9),
+        voices: 5, detune: 0.12,
+        phaseSpread: 0.7, maxPartials: 320
+    ) * 0.028
+}.play;
+)
+::
+
+subsection:: See also
+
+link::Guides/NovelOscillators::
+link::Classes/Klang::
+link::Classes/DynKlang::

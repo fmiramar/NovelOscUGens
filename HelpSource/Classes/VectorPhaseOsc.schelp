@@ -1,0 +1,92 @@
+class:: VectorPhaseOsc
+summary:: Piecewise vector phaseshaping oscillator
+categories:: UGens>Generators>Deterministic
+related:: Guides/NovelOscillators
+
+description::
+
+VectorPhaseOsc maps a signed linear phase through as many as eight movable
+two-dimensional breakpoints before reading a sine. It is an original
+implementation of the vector-phaseshaping technique described by Kleimola,
+Lazzarini, Timoney, and Välimäki. Breakpoint pairs are sorted by their x
+positions and sanitized every sample into a strictly increasing input
+sequence; each y value stays attached to its corresponding x value.
+Oversampling plus a maximum-segment-slope fade reduce the most severe aliases.
+
+The closest vanilla UGen is link::Classes/SinOsc::. Neutral breakpoints reproduce
+a sine, while non-neutral points redistribute phase speed within every cycle.
+
+classmethods::
+
+method:: ar
+
+argument:: freq
+Signed frequency in hertz.
+
+argument:: x
+One to eight input-phase breakpoint positions. Values are sorted, clamped away
+from the endpoints, and made strictly increasing.
+
+argument:: y
+An array matching code::x:: in length. Values are clamped to code::0..1::.
+
+argument:: phaseMod
+Readout phase modulation in radians, applied before the segment map without
+changing accumulated phase.
+
+argument:: sync
+A nonpositive-to-positive edge resets accumulated phase before producing that
+sample.
+
+argument:: oversample
+Initialization-rate factor code::1::, code::2::, or code::4::.
+
+argument:: mul
+Output multiplier.
+
+argument:: add
+Offset added after multiplication.
+
+returns::
+One audio signal.
+
+method:: kr
+
+VectorPhaseOsc is audio-rate only. This method throws an error.
+
+subsection:: Discussion
+
+Implicit endpoints code::[0, 0]:: and code::[1, 1]:: preserve cycle
+continuity. Very short segments imply very high instantaneous frequency; the
+oscillator fades a mapping as its maximum segment frequency reaches Nyquist.
+
+examples::
+
+code::
+(
+{ VectorPhaseOsc.ar(110, [0.5], [0.5]) * 0.08 }.play;
+)
+::
+
+code::
+(
+{
+    VectorPhaseOsc.ar(
+        70,
+        [0.18, 0.62, 0.86],
+        [
+            LFNoise1.kr(0.2).range(0.08, 0.35),
+            0.72,
+            LFNoise1.kr(0.13).range(0.75, 0.98)
+        ],
+        oversample: 4
+    ) * 0.07;
+}.play;
+)
+::
+
+subsection:: See also
+
+link::Guides/NovelOscillators::
+link::Classes/SinOsc::
+link::Classes/Phasor::

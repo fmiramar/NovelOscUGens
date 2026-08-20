@@ -1,0 +1,117 @@
+class:: ScannedNetworkOsc
+summary:: Scan a moving mass-spring network as an oscillator waveform
+categories:: UGens>Generators>Deterministic
+related:: Guides/NovelOscillators
+
+description::
+
+ScannedNetworkOsc separates a slow one-dimensional mass-spring simulation from
+an audio-rate scanner. The network supplies a changing wavetable while the
+signed scan frequency supplies pitch. This original implementation follows the
+scanned-synthesis model described by Smaragdis and uses a bounded
+velocity-Verlet integration with a conservative, automatically substepped
+physical timestep.
+
+The closest vanilla UGen is link::Classes/Osc::. Both scan a stored shape, but
+Osc reads a Buffer while ScannedNetworkOsc continuously evolves private
+displacement and velocity arrays.
+
+classmethods::
+
+method:: ar
+
+argument:: freq
+Signed scan frequency in hertz.
+
+argument:: rate
+Physical evolution speed, clamped to code::0..20::. Zero freezes displacement
+and velocity exactly while scanning continues.
+
+argument:: stiffness
+Neighbor coupling, clamped to code::0..1::.
+
+argument:: centering
+Restoring force toward zero, clamped to code::0..1::.
+
+argument:: damping
+Velocity loss, clamped to code::0..2::.
+
+argument:: excite
+Continuous force near code::position::, clamped to code::-8..8::.
+
+argument:: strike
+A nonpositive-to-positive edge applies one spatially smoothed impulse.
+
+argument:: strikeAmp
+Signed impulse amplitude, clamped to code::-8..8::.
+
+argument:: position
+Normalized excitation location, clamped to code::0..1::.
+
+argument:: scanPath
+Initialization-rate path: code::0:: forward, code::1:: alternating direction,
+or code::2:: folded.
+
+argument:: nodes
+Initialization-rate node count from code::16:: through code::512::. CPU and
+private state grow approximately linearly with this value.
+
+argument:: topology
+Initialization-rate topology: code::0:: fixed endpoints or code::1:: circular.
+
+argument:: initShape
+Initialization-rate displacement: code::0:: sine, code::1:: triangle,
+code::2:: seeded smooth noise, or code::3:: silence.
+
+argument:: seed
+Initialization-rate nonnegative deterministic seed.
+
+argument:: mul
+Output multiplier applied to both channels.
+
+argument:: add
+Offset added to both channels after multiplication.
+
+returns::
+An array containing the scanned signal followed by smoothed normalized network
+energy.
+
+method:: kr
+
+ScannedNetworkOsc is audio-rate only. This method throws an error.
+
+subsection:: Discussion
+
+Physical updates run on a fixed 1 kHz scheduler and are independent of the
+audio scanner. A strike received while code::rate:: is zero is ignored so the
+documented freeze is exact. Fixed topology keeps both endpoints at zero.
+Network state is allocated only during UGen construction.
+
+examples::
+
+code::
+(
+{ ScannedNetworkOsc.ar(90, rate: 0.15)[0] * 0.08 }.play;
+)
+::
+
+code::
+(
+{
+    var hit = Dust.kr(0.8);
+    var scan = ScannedNetworkOsc.ar(
+        62, rate: 0.3, stiffness: 0.45,
+        damping: 0.015, strike: hit, strikeAmp: 0.5,
+        position: LFNoise1.kr(0.2).range(0, 1),
+        nodes: 192
+    );
+    Pan2.ar(scan[0], scan[1].linlin(0, 1, -0.7, 0.7)) * 0.07;
+}.play;
+)
+::
+
+subsection:: See also
+
+link::Guides/NovelOscillators::
+link::Classes/Osc::
+link::Classes/Pluck::

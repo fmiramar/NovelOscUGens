@@ -1,0 +1,106 @@
+class:: PMNetworkOsc
+summary:: Three-operator phase- and through-zero frequency-modulation network
+categories:: UGens>Generators>Deterministic
+related:: Guides/NovelOscillators
+
+description::
+
+PMNetworkOsc contains three oscillators connected by independent phase- and
+linear-frequency-modulation matrices. Every operator is returned separately.
+Feedback uses the previous oversampled substep, so cyclic networks have a
+defined one-substep delay and remain deterministic.
+
+Matrices are flattened in row-major order. Entry
+code::(row * 3) + column:: routes the preceding output of operator
+code::column:: into operator code::row::. code::pm:: coefficients are radians;
+code::fm:: coefficients are hertz. Ratios, matrices, and amplitudes may contain
+audio-rate signals.
+
+The closest vanilla UGen is link::Classes/SinOscFB::. Both define feedback
+without an algebraic loop, but PMNetworkOsc has three independently returned
+operators, arbitrary routing, simultaneous PM and through-zero FM, four
+waveforms, and optional oversampling.
+
+classmethods::
+
+method:: ar
+
+argument:: freq
+Signed network base frequency in hertz.
+
+argument:: ratios
+Exactly three operator-frequency ratios. Elements may be audio rate.
+
+argument:: pm
+Exactly nine row-major PM coefficients in radians. Elements may be audio rate.
+
+argument:: fm
+Exactly nine row-major linear-FM coefficients in hertz. Elements may be audio
+rate.
+
+argument:: amplitudes
+Exactly three operator output amplitudes, clamped to code::-4..4::.
+
+argument:: waveforms
+Exactly three initialization-rate shape indices: code::0:: sine, code::1::
+triangle, code::2:: saw, and code::3:: pulse.
+
+argument:: oversample
+Initialization-rate value code::1::, code::2::, or code::4::.
+
+argument:: mul
+Multiplier applied to all three outputs.
+
+argument:: add
+Offset added to all three outputs after multiplication.
+
+returns::
+An array containing operators 0, 1, and 2.
+
+method:: kr
+
+PMNetworkOsc is audio-rate only. This method throws an error.
+
+subsection:: Discussion
+
+A zero matrix produces three independent oscillators. PM changes only readout
+phase; FM changes the signed phase increment and may reverse it through zero.
+Strong cyclic coefficients can be chaotic but non-finite internal results are
+replaced with zero and output is conservatively bounded.
+
+examples::
+
+code::
+(
+{ PMNetworkOsc.ar(110)[0] * 0.075 }.play;
+)
+::
+
+code::
+(
+{
+    var pm = [
+        0, 2.4, 0,
+        0, 0, 1.2,
+        0.7, 0, 0
+    ];
+    var fm = [
+        0, 0, 0,
+        0, 0, 45,
+        20, 0, 0
+    ];
+    Splay.ar(
+        PMNetworkOsc.ar(
+            70, [1, 1.5, 2], pm, fm,
+            [1, 0.5, 0.3], [0, 1, 2], 4
+        )
+    ) * 0.04;
+}.play;
+)
+::
+
+subsection:: See also
+
+link::Guides/NovelOscillators::
+link::Classes/SinOscFB::
+link::Classes/LocalIn::

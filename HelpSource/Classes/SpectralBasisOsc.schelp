@@ -1,0 +1,105 @@
+class:: SpectralBasisOsc
+summary:: Wavetable synthesis from shaped orthogonal-basis coefficients
+categories:: UGens>Generators>Deterministic
+related:: Guides/NovelOscillators
+
+description::
+
+SpectralBasisOsc builds a periodic waveform from a deterministic coefficient
+envelope. Fourier, Walsh, Haar, and Daubechies-4 inverse transforms turn the
+same envelope into distinct timbral families.
+
+Two internal table banks are allocated at initialization. Parameter changes
+regenerate the inactive bank only at calculation-block boundaries, subject to
+code::refresh::. DC is removed, the table is peak-normalized, mip levels are
+generated, and playback crossfades to the new bank over approximately 20
+milliseconds. No FFT plan or memory allocation occurs in the calculation
+callback.
+
+The closest vanilla UGen is link::Classes/Osc::. Both play a periodic
+wavetable, but SpectralBasisOsc constructs and refreshes its own mipmapped
+tables from alternative transform bases.
+
+classmethods::
+
+method:: ar
+
+argument:: freq
+Signed playback frequency in hertz.
+
+argument:: basis
+Transform selection, rounded and clamped to code::0..3::. The meanings are
+code::0:: Fourier, code::1:: Walsh, code::2:: Haar, and code::3::
+Daubechies-4.
+
+argument:: center
+Center of the coefficient envelope from code::0:: through code::1::.
+
+argument:: width
+Envelope width, clamped to code::0.005..1::.
+
+argument:: tilt
+Exponential spectral tilt, clamped to code::-8..8::.
+
+argument:: skew
+Asymmetry of the two envelope sides, clamped to code::-0.95..0.95::.
+
+argument:: phase
+Readout phase offset in radians.
+
+argument:: refresh
+Maximum table regenerations per second, clamped to code::0.1..200::.
+
+argument:: tableSize
+Initialization-rate power of two from code::128:: through code::4096::. Larger
+tables improve waveform resolution but increase per-instance memory and
+regeneration cost.
+
+argument:: mul
+Output multiplier.
+
+argument:: add
+Offset added after multiplication.
+
+returns::
+A mono audio-rate signal.
+
+method:: kr
+
+SpectralBasisOsc is audio-rate only. This method throws an error.
+
+subsection:: Discussion
+
+Identical controls produce identical tables; the UGen has no hidden random
+phase. Playback begins with a fully generated table, so it has no silent
+warmup. Fast control changes are refresh-limited, and a new regeneration waits
+until the current table crossfade completes.
+
+examples::
+
+code::
+(
+{ SpectralBasisOsc.ar(90, 0, 0.2, 0.12) * 0.075 }.play;
+)
+::
+
+code::
+(
+{
+    var center = LFTri.kr(0.05).range(0.05, 0.9);
+    var width = LFNoise1.kr(0.2).range(0.03, 0.3);
+    SpectralBasisOsc.ar(
+        55, basis: 3, center: center, width: width,
+        tilt: -0.4,
+        skew: LFNoise1.kr(0.13).range(-0.8, 0.8),
+        refresh: 40, tableSize: 1024
+    ) * 0.06
+}.play;
+)
+::
+
+subsection:: See also
+
+link::Guides/NovelOscillators::
+link::Classes/Osc::
+link::Classes/VOsc::

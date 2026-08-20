@@ -1,0 +1,163 @@
+class:: TableMorph2D
+summary:: Bilinear traversal of a mipmapped two-dimensional wavetable grid
+categories:: UGens>Generators>Deterministic
+related:: Guides/NovelOscillators
+
+description::
+
+TableMorph2D treats a wavetable bank as a rectangular surface. code::x:: and
+code::y:: move continuously across four neighboring tables while code::freq::
+reads the interpolated waveform. Prepared mip levels reduce high-frequency
+aliasing.
+
+The mono buffer layout is exactly
+code::[mip][y][x][sample]::. Every table has code::tableSize:: samples and the
+total buffer length must equal
+code::mipLevels * tablesY * tablesX * tableSize::. The UGen validates that
+declaration once, remembers the buffer identity, and becomes silent with one
+server error if the buffer is freed or replaced.
+
+Internally, the UGen performs periodic sample interpolation, bilinear spatial
+interpolation, and a frequency-dependent crossfade between adjacent mip
+levels. The closest vanilla UGen is link::Classes/VOsc::. Both scan wavetable
+data, but TableMorph2D interpolates a declared two-dimensional grid and manages
+mip selection explicitly.
+
+classmethods::
+
+method:: ar
+
+argument:: bufnum
+Number of a mono buffer prepared in the documented layout.
+
+argument:: freq
+Signed playback frequency in hertz. Negative values read backward.
+
+argument:: x
+Horizontal grid position from code::0:: through code::1::. Values outside the
+range are clamped.
+
+argument:: y
+Vertical grid position from code::0:: through code::1::. Values outside the
+range are clamped.
+
+argument:: phase
+Readout phase offset in radians.
+
+argument:: tablesX
+Initialization-rate column count from code::1:: through code::1024::.
+
+argument:: tablesY
+Initialization-rate row count from code::1:: through code::1024::.
+
+argument:: tableSize
+Initialization-rate power of two from code::64:: through code::65536::.
+
+argument:: mipLevels
+Initialization-rate integer from code::1:: through code::16::.
+
+argument:: interpolation
+Initialization-rate mode: code::0:: nearest, code::1:: linear, or code::2::
+cubic.
+
+argument:: mul
+Output multiplier.
+
+argument:: add
+Offset added after multiplication.
+
+returns::
+A mono audio-rate signal.
+
+method:: prepareBuffer
+
+argument:: server
+The server that will own the buffer. The default is code::Server.default::.
+
+argument:: tables
+A row-major collection of code::tablesX * tablesY:: equal-length sample
+collections containing finite values. Only procedural or appropriately
+licensed tables should be used.
+
+argument:: tablesX
+Literal horizontal dimension from code::1:: through code::1024::.
+
+argument:: tablesY
+Literal vertical dimension from code::1:: through code::1024::.
+
+argument:: mipLevels
+Number of stored mip levels, from code::1:: through code::16::.
+
+argument:: normalize
+If true, remove DC and peak-normalize every source table. DC is always removed.
+
+argument:: action
+Function passed to link::Classes/Buffer#*loadCollection:: after loading.
+
+returns::
+The allocated Buffer. Buffer loading is asynchronous; call code::s.sync::
+before starting a Synth when using the return value directly.
+
+method:: kr
+
+TableMorph2D is audio-rate only. This method throws an error.
+
+subsection:: Discussion
+
+The dimensions are never inferred from the buffer length. Reallocating or
+freeing the buffer while a Synth is active makes that instance permanently
+silent. Spatial controls may run at audio rate and are interpolated sample by
+sample.
+
+examples::
+
+code::
+(
+Routine({
+    var size = 256;
+    var tables = [
+        Signal.sineFill(size, [1]),
+        Signal.sineFill(size, [1, 0.35]),
+        Signal.sineFill(size, [0, 1]),
+        Signal.sineFill(size, [1, 0, 0.25])
+    ];
+    var buffer = TableMorph2D.prepareBuffer(s, tables, 2, 2, 4);
+    s.sync;
+    {
+        TableMorph2D.ar(
+            buffer, 90, 0.2, 0.8,
+            tablesX: 2, tablesY: 2,
+            tableSize: size, mipLevels: 4
+        ) * 0.08
+    }.play;
+}).play;
+)
+::
+
+code::
+(
+Routine({
+    var size = 512;
+    var tables = 9.collect { |index|
+        Signal.sineFill(size, [1, index / 12, index / 24])
+    };
+    var buffer = TableMorph2D.prepareBuffer(s, tables, 3, 3, 5);
+    s.sync;
+    {
+        TableMorph2D.ar(
+            buffer, 70,
+            LFTri.kr(0.07).range(0, 1),
+            LFTri.kr(0.11).range(0, 1),
+            tablesX: 3, tablesY: 3,
+            tableSize: size, mipLevels: 5
+        ) * 0.07
+    }.play;
+}).play;
+)
+::
+
+subsection:: See also
+
+link::Guides/NovelOscillators::
+link::Classes/VOsc::
+link::Classes/BufRd::

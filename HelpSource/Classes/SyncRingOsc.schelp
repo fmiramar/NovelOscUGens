@@ -1,0 +1,110 @@
+class:: SyncRingOsc
+summary:: Carrier with two phase-synchronized ring modulators
+categories:: UGens>Generators>Deterministic
+related:: Guides/NovelOscillators
+
+description::
+
+SyncRingOsc derives two modulator phases from one signed carrier phase.
+Integer ratios stay locked; fractional ratios reset to a deterministic phase
+relationship on every carrier cycle. Two sequential amount controls crossfade
+from the preceding signal to its ring product.
+
+Sine, triangle, saw, and pulse shapes are available. Polynomial bandlimiting
+handles nonsinusoidal edges, optional oversampling reduces modulation-product
+aliasing, and fractional-ratio resets use a short correction ramp.
+
+The closest vanilla UGen is link::Classes/SyncSaw::. Both establish a
+repeatable phase relation, but SyncRingOsc derives two modulators from one
+carrier, supports multiple shapes, and exposes the carrier, both modulators,
+and final ring-modulated result.
+
+classmethods::
+
+method:: ar
+
+argument:: freq
+Signed carrier frequency in hertz.
+
+argument:: ratio1
+First modulator ratio relative to the carrier, clamped to code::-64..64::.
+
+argument:: ratio2
+Second modulator ratio relative to the carrier, clamped to code::-64..64::.
+
+argument:: amount1
+Crossfade from carrier to carrier times modulator 1, clamped to code::0..1::.
+
+argument:: amount2
+Crossfade from the first result to that result times modulator 2, clamped to
+code::0..1::.
+
+argument:: phase1
+First modulator phase offset in radians.
+
+argument:: phase2
+Second modulator phase offset in radians.
+
+argument:: carrierWave
+Initialization-rate carrier shape: code::0:: sine, code::1:: triangle,
+code::2:: saw, or code::3:: pulse.
+
+argument:: modWave1
+Initialization-rate first-modulator shape using the same indices.
+
+argument:: modWave2
+Initialization-rate second-modulator shape using the same indices.
+
+argument:: oversample
+Initialization-rate value code::1::, code::2::, or code::4::.
+
+argument:: mul
+Multiplier applied to all four outputs.
+
+argument:: add
+Offset added to all four outputs after multiplication.
+
+returns::
+Four signals in this order: carrier, modulator 1, modulator 2, and sequential
+ring-modulation result.
+
+method:: kr
+
+SyncRingOsc is audio-rate only. This method throws an error.
+
+subsection:: Discussion
+
+At code::amount1 = 0::, the first stage is exactly the carrier. At
+code::amount2 = 0::, the second stage leaves the first unchanged. Amount one
+selects the complete ring product. Feedback is not used, so all four outputs
+remain phase coherent.
+
+examples::
+
+code::
+(
+{ SyncRingOsc.ar(90, 2, 3, 0.8)[3] * 0.075 }.play;
+)
+::
+
+code::
+(
+{
+    var signal = SyncRingOsc.ar(
+        55,
+        LFNoise1.kr(0.2).range(1, 5),
+        LFNoise1.kr(0.13).range(2, 9),
+        amount1: 0.8, amount2: 0.6,
+        modWave1: 1, modWave2: 2,
+        oversample: 4
+    );
+    Splay.ar([signal[0], signal[3]]) * 0.045;
+}.play;
+)
+::
+
+subsection:: See also
+
+link::Guides/NovelOscillators::
+link::Classes/SyncSaw::
+link::Classes/Ringz::
