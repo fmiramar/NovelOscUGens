@@ -6,6 +6,7 @@ on:
       - main
   pull_request:
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
@@ -25,10 +26,10 @@ jobs:
             platform: macos
             arch: x86_64
             cmake_arch: "-DCMAKE_OSX_ARCHITECTURES=x86_64"
-          - os: macos-13
+          - os: macos-14
             platform: macos
             arch: arm64
-            cmake_arch: "-DCMAKE_OSX_ARCHITECTURES=arm64"
+            cmake_arch: ""
           - os: windows-2022
             platform: windows
             arch: x86_64
@@ -49,6 +50,13 @@ jobs:
           ref: Version-3.14.1
           path: supercollider
           submodules: false
+
+      - name: Read project version
+        id: version
+        shell: bash
+        run: |
+          ver=$(sed -n 's/^project(.*VERSION \([0-9.]*\).*/\1/p' NovelOscUGens/CMakeLists.txt)
+          echo "value=$ver" >> "$GITHUB_OUTPUT"
 
       - name: Configure
         shell: bash
@@ -75,7 +83,7 @@ jobs:
       - name: Upload extension
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ github.repository_owner }}-NovelOscUGens-0.2.0-${{ matrix.platform }}-${{ matrix.arch }}
+          name: NovelOscUGens-${{ steps.version.outputs.value }}-${{ matrix.platform }}-${{ matrix.arch }}
           path: stage/NovelOscUGens
           if-no-files-found: error
 
@@ -96,6 +104,13 @@ jobs:
           ref: Version-3.14.1
           path: supercollider
           submodules: recursive
+
+      - name: Read project version
+        id: version
+        shell: bash
+        run: |
+          ver=$(sed -n 's/^project(.*VERSION \([0-9.]*\).*/\1/p' NovelOscUGens/CMakeLists.txt)
+          echo "value=$ver" >> "$GITHUB_OUTPUT"
 
       - name: Configure
         run: >-
@@ -122,7 +137,7 @@ jobs:
       - name: Upload extension
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ github.repository_owner }}-NovelOscUGens-0.2.0-linux-x86_64-supernova
+          name: NovelOscUGens-${{ steps.version.outputs.value }}-linux-x86_64-supernova
           path: stage-supernova/NovelOscUGens
           if-no-files-found: error
 

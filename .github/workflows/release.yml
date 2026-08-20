@@ -1,0 +1,43 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  ci:
+    uses: ./.github/workflows/build.yml
+
+  release:
+    needs: ci
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download all CI artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Package platform zips
+        run: |
+          cd artifacts
+          for dir in NovelOscUGens-*; do
+            [ -d "$dir" ] || continue
+            # Skip sanitizers — they are a test-only build, not a release asset
+            case "$dir" in *-sanitizers) continue ;; esac
+            zip_name="${dir}.zip"
+            echo "Packaging $dir -> $zip_name"
+            (cd "$dir" && zip -r "../../$zip_name" .)
+          done
+          cd ..
+          ls -lh *.zip
+
+      - name: Upload assets to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: '*.zip'
+          fail_on_unmatched_files: true
