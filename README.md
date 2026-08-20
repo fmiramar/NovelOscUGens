@@ -1,10 +1,10 @@
 # NovelOscUGens
 
 NovelOscUGens is a standalone SuperCollider server-plugin extension by
-[fmiramar](https://github.com/fmiramar). It provides seventeen experimental
-audio-rate server UGens and two language-side oscillator constructors for
-phase shaping, wavetable morphing, additive spectra, feedback networks, and
-nonlinear modulation.
+fmiramar using codex. It provides seventeen experimental audio-rate server
+UGens and two language-side oscillator constructors for phase shaping,
+wavetable morphing, additive spectra, feedback networks, and nonlinear
+modulation.
 
 This is an original clean-room collection, not a port of one named instrument
 or plug-in. Its DSP combines published mathematics and established synthesis
@@ -78,9 +78,8 @@ The extension folder contains the plug-in binary, classes, help, license, and
 project documentation; keep that folder intact.
 
 Release archives use the form
-`fmiramar-NovelOscUGens-<version>-<platform>-<architecture>.zip`. For example,
-an Intel Mac download is named
-`fmiramar-NovelOscUGens-0.2.0-macos-x86_64.zip`.
+`NovelOscUGens-<version>-<platform>-<architecture>.zip`. For example, an Intel
+Mac download is named `NovelOscUGens-0.2.0-macos-x86_64.zip`.
 
 ## Build and install
 
